@@ -1792,6 +1792,29 @@ function check_quick_install_request()
 
 
 /**
+ * Format an install param like DB config and base url
+ *
+ * @return string
+ */
+function format_install_param( $value )
+{
+	// We need backslashes only for single quote(') and backslash(\):
+	$value = addcslashes( $value, "'\\" );
+	/*
+		The below code excludes even number of slashes, because we need always odd
+		number of slashes before single quote(') to avoid a broken string value.
+		Examples for source and result:
+		  \'     => \'         (1 slash is not converted because it is used only for single quote backslashing)
+		  \\'    => \\\'       (2 slashes are converted to 3, because only first one slash must be backslashed)
+		  \\\'   => \\\\\'     (3 slashes are converted to 5, first two slashes must be backslashed)
+		  \\\\'  => \\\\\\\'   (4 slashes are converted to 7, first three slashes must be backslashed)
+		  \\\\\' => \\\\\\\\\' (5 slashes are converted to 9, first four slashes must be backslashed)
+	*/
+	return preg_replace( '#(\\\\*)(\\\')#', '$1$1$2', $value );
+}
+
+
+/**
  * Update file /conf/_basic_config.php
  *
  * @param string Current action, updated by reference
@@ -1891,13 +1914,13 @@ function update_basic_config_file( $params = array() )
 			),
 			array(
 				"\$db_config = array(\n"
-					."\t'user'     => '".str_replace( array( "'", "\$" ), array( "\'", "\\$" ), $params['db_user'] )."',\$1"
-					."\t'password' => '".str_replace( array( "'", "\$" ), array( "\'", "\\$" ), $params['db_password'] )."',\$2"
-					."\t'name'     => '".str_replace( array( "'", "\$" ), array( "\'", "\\$" ), $params['db_name'] )."',\$3"
-					."\t'host'     => '".str_replace( array( "'", "\$" ), array( "\'", "\\$" ), $params['db_host'] )."',\$4",
-				"tableprefix = '".str_replace( "'", "\'", $params['db_tableprefix'] )."';",
-				"baseurl = '".str_replace( "'", "\'", $params['baseurl'] )."';",
-				"admin_email = '".str_replace( "'", "\'", $params['admin_email'] )."';",
+					."\t'user'     => '".format_install_param( $params['db_user'] )."',\$1"
+					."\t'password' => '".format_install_param( $params['db_password'] )."',\$2"
+					."\t'name'     => '".format_install_param( $params['db_name'] )."',\$3"
+					."\t'host'     => '".format_install_param( $params['db_host'] )."',\$4",
+				"tableprefix = '".format_install_param( $params['db_tableprefix'] )."';",
+				"baseurl = '".format_install_param( $params['baseurl'] )."';",
+				"admin_email = '".format_install_param( $params['admin_email'] )."';",
 				'config_is_done = 1;',
 			), $conf );
 
